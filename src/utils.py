@@ -5,6 +5,7 @@ import dill
 from src.exception import CustomException
 
 from sklearn.metrics import r2_score
+from sklearn.model_selection import GridSearchCV
 
 
 # Makes a pickle file for preprocessor and is called from data_transformation.py
@@ -22,7 +23,7 @@ def save_object(file_path, obj):
 
 # Called from Model Trainer
 # Evaluate the model 
-def evaluate_model(X_train, y_train, X_test, y_test, models):
+def evaluate_model(X_train, y_train, X_test, y_test, models, params):
 
     try:
         
@@ -33,8 +34,19 @@ def evaluate_model(X_train, y_train, X_test, y_test, models):
 
             # Accessing the values of dictionary
             model = list(models.values())[i]
+            param = params[list(models.keys())[i]]
 
-            model.fit(X_train, y_train)
+
+            # Goes over all the possible combination and selects the best possible parameters
+            gs = GridSearchCV(model, param, cv=3)
+            gs.fit(X_train, y_train)
+
+            '''
+             Although this would be suffice, we need to use model because the model here is also used over at model trainer
+             So, despite gs.fit() being completely fine. I have used model.set_params(**gs.best_params_)
+            '''
+            model.set_params(**gs.best_params_)
+            model.fit(X_train,y_train)
 
             y_train_pred = model.predict(X_train)
             y_test_pred = model.predict(X_test)
